@@ -1,12 +1,25 @@
 import path from "path";
 import express from "express";
 import { createServer } from "./index";
+import os from "os";
 
 const app = createServer();
 const port = process.env.PORT || 3000;
 
 const __dirname = import.meta.dirname;
 const distPath = path.join(__dirname, "../spa");
+
+const getLocalIp = () => {
+  const networkInterfaces = os.networkInterfaces();
+  for (const iface of Object.values(networkInterfaces)) {
+    for (const ifaceDetail of iface) {
+      if (ifaceDetail.family === 'IPv4' && !ifaceDetail.internal) {
+        return ifaceDetail.address;
+      }
+    }
+  }
+  return 'localhost';  // Fallback to localhost if no external IP found
+};
 
 // Serve static
 app.use(express.static(distPath));
@@ -25,5 +38,6 @@ app.use((req, res, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  const localIp = getLocalIp();
+  console.log(`Network: http://${localIp}:${port}`);
 });

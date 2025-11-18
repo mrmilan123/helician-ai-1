@@ -3,6 +3,7 @@ import express from "express";
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import os from "os";
 const handleDemo = (req, res) => {
   const response = {
     message: "Hello from Express server"
@@ -272,6 +273,17 @@ const app = createServer();
 const port = process.env.PORT || 3e3;
 const __dirname$1 = import.meta.dirname;
 const distPath = path.join(__dirname$1, "../spa");
+const getLocalIp = () => {
+  const networkInterfaces = os.networkInterfaces();
+  for (const iface of Object.values(networkInterfaces)) {
+    for (const ifaceDetail of iface) {
+      if (ifaceDetail.family === "IPv4" && !ifaceDetail.internal) {
+        return ifaceDetail.address;
+      }
+    }
+  }
+  return "localhost";
+};
 app.use(express.static(distPath));
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
@@ -281,6 +293,7 @@ app.use((req, res, next) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  const localIp = getLocalIp();
+  console.log(`Network: http://${localIp}:${port}`);
 });
 //# sourceMappingURL=node-build.mjs.map
