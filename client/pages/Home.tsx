@@ -85,8 +85,18 @@ export default function Home() {
       }
 
       const data = await response.json();
+      // Find the case details from the cases array
+      const selectedCase = cases.find((c) => c.caseId === caseId);
+
       // Navigate to chat with case data
-      navigate("/chat", { state: { caseId, chatData: data.chat } });
+      navigate("/chat", {
+        state: {
+          caseId,
+          chatData: data.chat,
+          caseName: selectedCase?.name,
+          caseType: selectedCase?.type,
+        },
+      });
     } catch (err) {
       setError("Failed to load case. Please try again.");
       console.error("Error loading case:", err);
