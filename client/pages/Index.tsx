@@ -37,7 +37,7 @@ export default function Login() {
         return;
       }
 
-      const response = await fetch("/webhook/login", {
+      const response = await fetch(buildApiUrl("/webhook/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
