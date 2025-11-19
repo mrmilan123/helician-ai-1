@@ -95,7 +95,7 @@ export default function Signup() {
         gender: formData.gender,
       };
 
-      const response = await fetch("/webhook/sign-up-user", {
+      const response = await fetch(buildApiUrl("/webhook/sign-up-user"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
