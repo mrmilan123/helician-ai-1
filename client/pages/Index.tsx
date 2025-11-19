@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { buildApiUrl } from "@/lib/api-config";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export default function Login() {
         return;
       }
 
-      const response = await fetch("/webhook/login", {
+      const response = await fetch(buildApiUrl("/webhook/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

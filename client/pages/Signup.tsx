@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { LogIn, Mail, Lock, User, Calendar, Venus, Mars } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { buildApiUrl } from "@/lib/api-config";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -94,7 +95,7 @@ export default function Signup() {
         gender: formData.gender,
       };
 
-      const response = await fetch("/webhook/sign-up-user", {
+      const response = await fetch(buildApiUrl("/webhook/sign-up-user"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
