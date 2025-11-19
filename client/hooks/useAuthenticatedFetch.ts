@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { buildApiUrl } from "@/lib/api-config";
 
 interface FetchOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -32,7 +33,9 @@ export function useAuthenticatedFetch() {
       }
     }
 
-    const response = await fetch(url, {
+    const fullUrl = buildApiUrl(url);
+
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
