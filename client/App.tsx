@@ -13,6 +13,8 @@ import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
+console.log(">>> APP.TSX FILE STARTED <<<");
+
 const queryClient = new QueryClient();
 
 function AppRoutes() {

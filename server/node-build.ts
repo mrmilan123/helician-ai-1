@@ -39,5 +39,5 @@ app.use((req, res, next) => {
 
 app.listen(port, () => {
   const localIp = getLocalIp();
-  console.log(`Network: http://${localIp}:${port}`);
+  console.log(`Network: http://${localIp}:${port}/`);
 });

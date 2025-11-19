@@ -3,9 +3,11 @@ import { App } from "./App";
 
 let root: ReturnType<typeof createRoot> | null = null;
 
+console.log(">>> MAIN.TSX FILE STARTED <<<");
+
 function render() {
   const container = document.getElementById("root");
-  
+
   if (!container) {
     console.error("Root container not found");
     return;
