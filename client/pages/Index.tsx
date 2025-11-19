@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { buildApiUrl } from "@/lib/api-config";
 
 export default function Login() {
   const navigate = useNavigate();
