@@ -36,8 +36,12 @@ function expressPlugin(): Plugin {
     configureServer(server) {
       const app = createServer();
 
-      // Mount Express app under /api only
-      server.middlewares.use(app);
+      // Mount Express app only for /api and /webhook routes
+      // This allows Vite to serve SPA HTML for all other routes
+      return () => {
+        server.middlewares.use("/api", app);
+        server.middlewares.use("/webhook", app);
+      };
     },
   };
 }
