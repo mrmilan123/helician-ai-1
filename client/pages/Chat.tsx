@@ -315,14 +315,19 @@ export default function Chat() {
       }
 
       const data = await response.json();
+      const messageContent = data.content?.message || data.content;
+
+      let contentType: "text" | "image" | "video" | "step" = (data.type || "text") as any;
+
+      if (checkIsStepMessage(messageContent)) {
+        contentType = "step";
+      }
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content:
-          data.content.message ||
-          "I couldn't process your message. Please try again.",
+        content: messageContent || "I couldn't process your message. Please try again.",
         time: new Date().toISOString(),
-        contentType: (data.type || "text") as "text" | "image" | "video",
+        contentType,
         caseType: data.caseType || caseType,
       };
 
