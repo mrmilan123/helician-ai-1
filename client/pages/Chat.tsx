@@ -6,7 +6,7 @@ import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import StepMessageRenderer from "@/components/StepMessageRenderer";
-import type { ChatMessage, Conversation, StepMessage, isStepMessage } from "@/types/message";
+import type { ChatMessage, Conversation, StepMessage } from "@/types/message";
 import { isStepMessage as checkIsStepMessage } from "@/types/message";
 
 export default function Chat() {
