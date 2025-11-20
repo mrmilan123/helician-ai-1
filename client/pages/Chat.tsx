@@ -2,21 +2,23 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Send, Plus, MessageSquare, Menu, X } from "lucide-react";
+import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 interface ChatMessage {
   role: "user" | "assistant";
-  content: string | { url?: string; message?: string };
+  content: string | { url?: string; message?: string; caseType?: string };
   time: string;
   contentType: "text" | "image" | "video";
+  caseType?: string;
 }
 
 interface Conversation {
   id: string;
   title: string;
   messages: ChatMessage[];
+  caseType?: string;
 }
 
 export default function Chat() {
@@ -28,6 +30,7 @@ export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,6 +80,7 @@ export default function Chat() {
                   | "text"
                   | "image"
                   | "video",
+                caseType: caseType,
               },
             ];
           }
@@ -88,6 +92,7 @@ export default function Chat() {
           id: convId,
           title: caseName || `Case #${caseId}`,
           messages: messages,
+          caseType: caseType,
         };
 
         setConversations([caseConversation]);
@@ -100,9 +105,12 @@ export default function Chat() {
           id: convId,
           title: caseName || `Case #${caseId}`,
           messages: [],
+          caseType: caseType,
         };
         setConversations([caseConversation]);
         setCurrentConversationId(convId);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
@@ -154,6 +162,7 @@ export default function Chat() {
       content: messageContent,
       time: new Date().toISOString(),
       contentType: "text",
+      caseType: caseType,
     };
 
     setConversations(
@@ -199,6 +208,7 @@ export default function Chat() {
           "I couldn't process your message. Please try again.",
         time: new Date().toISOString(),
         contentType: (data.type || "text") as "text" | "image" | "video",
+        caseType: data.caseType || caseType,
       };
 
       setConversations(
@@ -221,6 +231,7 @@ export default function Chat() {
         content: "Sorry, I encountered an error. Please try again.",
         time: new Date().toISOString(),
         contentType: "text",
+        caseType: caseType,
       };
 
       setConversations(
@@ -288,12 +299,17 @@ export default function Chat() {
     return <p className="text-sm">{String(message.content)}</p>;
   };
 
-  if (!currentConversation) {
+  if (!currentConversation || isInitializing) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading conversation...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background to-background/80 flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto animate-pulse">
+            <Loader className="w-8 h-8 text-primary animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-foreground">Initializing chat...</p>
+            <p className="text-sm text-muted-foreground">Setting up your case conversation</p>
+          </div>
         </div>
       </div>
     );
@@ -375,85 +391,116 @@ export default function Chat() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border bg-card">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden text-muted-foreground hover:text-foreground"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-semibold text-foreground">
-              {currentConversation?.title || "Chat"}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleGoHome}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
-            >
-              ← Back
-            </button>
-            <button
-              onClick={handleLogout}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+        <div className="border-b border-border bg-gradient-to-r from-card to-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between h-20 px-4 md:px-6">
+            <div className="flex items-center gap-4 flex-1">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-foreground line-clamp-1">
+                  {currentConversation?.title || "Chat"}
+                </h2>
+                {caseType && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary">
+                      {caseType}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGoHome}
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleLogout}
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-background/50">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
             {currentConversation?.messages &&
             currentConversation.messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-4">
-                  <MessageSquare className="w-8 h-8 text-primary" />
+              <div className="h-full flex flex-col items-center justify-center text-center min-h-96">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-6">
+                  <MessageSquare className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold font-display text-foreground mb-2">
+                <h3 className="text-2xl font-bold font-display text-foreground mb-3">
                   Start your conversation
                 </h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Type a message to begin discussing this case with the
+                <p className="text-base text-muted-foreground max-w-sm mb-6">
+                  Type a message below to begin discussing this case with the
                   assistant.
                 </p>
+                <div className="px-4 py-3 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground">
+                  The assistant is ready to help with your <span className="font-semibold text-foreground">{caseType}</span> case
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {currentConversation?.messages.map((msg, index) => (
                   <div
                     key={index}
-                    className={`flex ${
+                    className={`flex gap-3 ${
                       msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    } animate-in fade-in slide-in-from-bottom-2 duration-300`}
                   >
+                    {msg.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                      </div>
+                    )}
                     <div
-                      className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-lg ${
+                      className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg ${
                         msg.role === "user"
-                          ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-br-none"
-                          : "bg-muted text-foreground rounded-bl-none"
-                      }`}
+                          ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-2xl rounded-tr-md shadow-lg"
+                          : "bg-muted/60 border border-border text-foreground rounded-2xl rounded-tl-md"
+                      } px-4 py-3`}
                     >
                       {renderMessageContent(msg)}
-                      <p className="text-xs mt-1 opacity-70">
+                      <p className={`text-xs mt-2 ${
+                        msg.role === "user"
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground"
+                      }`}>
                         {new Date(msg.time).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
                     </div>
+                    {msg.role === "user" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-xs font-bold text-primary-foreground">You</span>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted text-foreground px-4 py-3 rounded-lg rounded-bl-none">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce delay-100" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce delay-200" />
+                  <div className="flex justify-start gap-3 animate-in fade-in duration-200">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="bg-muted/60 border border-border text-foreground px-4 py-3 rounded-2xl rounded-tl-md">
+                      <div className="flex gap-2">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   </div>
@@ -465,23 +512,27 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-border bg-card">
-          <div className="max-w-3xl mx-auto px-4 py-4">
-            <form onSubmit={handleSendMessage} className="flex gap-3">
+        <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
+            <form onSubmit={handleSendMessage} className="flex gap-2">
               <Input
                 type="text"
-                placeholder="Send a message..."
+                placeholder="Type your message here..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isLoading}
-                className="flex-1 h-11 border-border focus:border-primary focus:ring-primary bg-input text-foreground placeholder:text-muted-foreground"
+                className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
               />
               <Button
                 type="submit"
                 disabled={isLoading || !inputValue.trim()}
-                className="h-11 px-4 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg transition-all disabled:opacity-50"
+                className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </Button>
             </form>
           </div>
