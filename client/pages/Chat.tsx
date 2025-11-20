@@ -2,21 +2,23 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Send, Plus, MessageSquare, Menu, X } from "lucide-react";
+import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 
 interface ChatMessage {
   role: "user" | "assistant";
-  content: string | { url?: string; message?: string };
+  content: string | { url?: string; message?: string; caseType?: string };
   time: string;
   contentType: "text" | "image" | "video";
+  caseType?: string;
 }
 
 interface Conversation {
   id: string;
   title: string;
   messages: ChatMessage[];
+  caseType?: string;
 }
 
 export default function Chat() {
