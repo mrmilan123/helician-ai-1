@@ -299,12 +299,17 @@ export default function Chat() {
     return <p className="text-sm">{String(message.content)}</p>;
   };
 
-  if (!currentConversation) {
+  if (!currentConversation || isInitializing) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading conversation...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background to-background/80 flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mx-auto animate-pulse">
+            <Loader className="w-8 h-8 text-primary animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-foreground">Initializing chat...</p>
+            <p className="text-sm text-muted-foreground">Setting up your case conversation</p>
+          </div>
         </div>
       </div>
     );
