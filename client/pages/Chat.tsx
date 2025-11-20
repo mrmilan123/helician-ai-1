@@ -136,6 +136,128 @@ export default function Chat() {
     navigate("/home");
   };
 
+  const handleStepSubmit = async (value: string | string[], skipDocument?: boolean) => {
+    if (!currentConversation) {
+      return;
+    }
+
+    let userMessage: ChatMessage;
+
+    if (skipDocument) {
+      userMessage = {
+        role: "user",
+        content: "Skip for now",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+    } else {
+      const displayValue = Array.isArray(value) ? value.join(", ") : value;
+      userMessage = {
+        role: "user",
+        content: displayValue,
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+    }
+
+    setConversations(
+      conversations.map((conv) => {
+        if (conv.id === currentConversationId) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+          };
+        }
+        return conv;
+      }),
+    );
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetchWithAuth("/webhook/ai-resp", {
+        method: "POST",
+        body: JSON.stringify({
+          caseId: caseId,
+          caseName: caseName || `Case #${caseId}`,
+          caseType: caseType || "",
+          content: {
+            message: Array.isArray(value) ? value.join(", ") : value,
+          },
+          type: "text",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+
+      let assistantMessage: ChatMessage;
+
+      if (checkIsStepMessage(data.content?.message || data.content)) {
+        const stepMsg = data.content?.message || data.content;
+        assistantMessage = {
+          role: "assistant",
+          content: stepMsg,
+          time: new Date().toISOString(),
+          contentType: "step",
+          caseType: data.caseType || caseType,
+        };
+      } else {
+        assistantMessage = {
+          role: "assistant",
+          content:
+            data.content?.message ||
+            data.content ||
+            "I couldn't process your message. Please try again.",
+          time: new Date().toISOString(),
+          contentType: (data.type || "text") as "text" | "image" | "video",
+          caseType: data.caseType || caseType,
+        };
+      }
+
+      setConversations(
+        conversations.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, assistantMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+
+      setConversations(
+        conversations.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, errorMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
