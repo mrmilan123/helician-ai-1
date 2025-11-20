@@ -23,12 +23,14 @@ export function useAuthenticatedFetch() {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // Add Content-Type for POST/PUT/PATCH requests
+    // Add Content-Type for POST/PUT/PATCH requests (but not for FormData)
     if (
       options.method &&
       ["POST", "PUT", "PATCH"].includes(options.method.toUpperCase())
     ) {
-      if (!headers["Content-Type"]) {
+      // Don't set Content-Type for FormData - let the browser handle it
+      const isFormData = options.body instanceof FormData;
+      if (!headers["Content-Type"] && !isFormData) {
         headers["Content-Type"] = "application/json";
       }
     }
