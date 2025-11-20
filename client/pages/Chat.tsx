@@ -391,32 +391,43 @@ export default function Chat() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border bg-card">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden text-muted-foreground hover:text-foreground"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-semibold text-foreground">
-              {currentConversation?.title || "Chat"}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleGoHome}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
-            >
-              ← Back
-            </button>
-            <button
-              onClick={handleLogout}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+        <div className="border-b border-border bg-gradient-to-r from-card to-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between h-20 px-4 md:px-6">
+            <div className="flex items-center gap-4 flex-1">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="md:hidden text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-foreground line-clamp-1">
+                  {currentConversation?.title || "Chat"}
+                </h2>
+                {caseType && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/15 text-primary">
+                      {caseType}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGoHome}
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleLogout}
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
