@@ -14,6 +14,8 @@ import {
 import AddCaseModal from "@/components/AddCaseModal";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { isStepMessage } from "@/types/message";
+import type { ChatMessage } from "@/types/message";
 
 interface UserDetails {
   id: number;
