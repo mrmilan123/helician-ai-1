@@ -576,7 +576,9 @@ export default function Chat() {
                       </div>
                     )}
                     <div
-                      className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg ${
+                      className={`${
+                        msg.contentType === "step" ? "max-w-2xl" : "max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
+                      } ${
                         msg.role === "user"
                           ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-2xl rounded-tr-md shadow-lg"
                           : "bg-muted/60 border border-border text-foreground rounded-2xl rounded-tl-md"
