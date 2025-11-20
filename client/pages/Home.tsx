@@ -130,16 +130,19 @@ export default function Home() {
       }
 
       const chatInitData = await response.json();
+      const messageContent = chatInitData.content?.message || chatInitData.content;
+
+      let contentType: "text" | "image" | "video" | "step" = (chatInitData.type || "text") as any;
+      if (isStepMessage(messageContent)) {
+        contentType = "step";
+      }
 
       // Create initial AI message from the initiate-chat response
-      const initialMessage = {
-        role: "assistant" as const,
-        content: chatInitData.content.message,
+      const initialMessage: ChatMessage = {
+        role: "assistant",
+        content: messageContent,
         time: new Date().toISOString(),
-        contentType: (chatInitData.type || "text") as
-          | "text"
-          | "image"
-          | "video",
+        contentType,
       };
 
       // Navigate to chat-screen with case data and initial message
