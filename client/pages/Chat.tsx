@@ -239,6 +239,19 @@ export default function Chat() {
   };
 
   const renderMessageContent = (message: ChatMessage) => {
+    if (message.contentType === "step") {
+      const stepMessage = message.content as StepMessage;
+      return (
+        <div className="bg-muted/30 rounded-lg p-4 border border-border">
+          <StepMessageRenderer
+            message={stepMessage}
+            onSubmit={handleStepSubmit}
+            isLoading={isLoading}
+          />
+        </div>
+      );
+    }
+
     if (message.contentType === "text") {
       const textContent =
         typeof message.content === "string"
