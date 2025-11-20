@@ -30,6 +30,7 @@ export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +80,7 @@ export default function Chat() {
                   | "text"
                   | "image"
                   | "video",
+                caseType: caseType,
               },
             ];
           }
@@ -90,6 +92,7 @@ export default function Chat() {
           id: convId,
           title: caseName || `Case #${caseId}`,
           messages: messages,
+          caseType: caseType,
         };
 
         setConversations([caseConversation]);
@@ -102,9 +105,12 @@ export default function Chat() {
           id: convId,
           title: caseName || `Case #${caseId}`,
           messages: [],
+          caseType: caseType,
         };
         setConversations([caseConversation]);
         setCurrentConversationId(convId);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
