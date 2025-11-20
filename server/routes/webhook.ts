@@ -158,17 +158,46 @@ export const handleInitiateChat: RequestHandler = async (req, res) => {
 export const handleAiResponse: RequestHandler = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const result = await forwardRequest(
-      "/ai-resp",
-      "POST",
-      req.body,
-      authHeader,
-    );
 
-    if (result.ok) {
-      res.status(result.status).json(result.data);
+    // Check if this is a file upload (FormData) or text request
+    const contentType = req.headers["content-type"] || "";
+    const isFormData = contentType.includes("multipart/form-data");
+
+    if (isFormData) {
+      // Handle FormData file upload
+      const formDataHeaders: Record<string, string> = {};
+      if (authHeader) {
+        formDataHeaders["Authorization"] = authHeader;
+      }
+      // Don't set Content-Type here, let fetch handle it with FormData
+
+      try {
+        const response = await fetch(`http://localhost:5678/webhook/ai-resp`, {
+          method: "POST",
+          headers: formDataHeaders,
+          body: req.body,
+        });
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+      } catch (error) {
+        console.error("Error forwarding FormData request:", error);
+        res.status(500).json({ error: "Failed to process file upload" });
+      }
     } else {
-      res.status(result.status).json(result.data);
+      // Handle JSON text request
+      const result = await forwardRequest(
+        "/ai-resp",
+        "POST",
+        req.body,
+        authHeader,
+      );
+
+      if (result.ok) {
+        res.status(result.status).json(result.data);
+      } else {
+        res.status(result.status).json(result.data);
+      }
     }
   } catch (error) {
     console.error("AI response error:", error);
