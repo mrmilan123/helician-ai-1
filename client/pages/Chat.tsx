@@ -337,14 +337,6 @@ export default function Chat() {
             </button>
           </div>
 
-          {/* New Chat Button */}
-          <button
-            onClick={handleNewConversation}
-            className="m-4 flex items-center gap-2 justify-center w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-medium transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            New Chat
-          </button>
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto px-2 py-4">
@@ -412,21 +404,6 @@ export default function Chat() {
                   </div>
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleGoHome}
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
             </div>
           </div>
         </div>
