@@ -405,21 +405,6 @@ export default function Chat() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleGoHome}
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors text-sm font-medium"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors text-sm font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
           </div>
         </div>
 
