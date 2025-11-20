@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, X, FileText, AlertCircle } from "lucide-react";
+import { Upload, X, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import type { StepMessage } from "@/types/message";
 
 interface StepMessageRendererProps {
   message: StepMessage;
-  onSubmit: (value: string | string[], skipDocument?: boolean) => void;
+  onSubmit: (value: string | string[] | File[], skipDocument?: boolean) => void;
   isLoading?: boolean;
 }
 
@@ -20,6 +20,8 @@ export default function StepMessageRenderer({
   const [textValue, setTextValue] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRadioSelect = (value: string) => {
     setSelectedValue(value);
@@ -46,14 +48,11 @@ export default function StepMessageRenderer({
     }
   };
 
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files) return;
-
+  const validateFiles = (files: File[]): File[] => {
     setUploadError("");
-    const newFiles: File[] = [];
+    const validFiles: File[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (const file of files) {
       const fileExtension = file.name.split(".").pop()?.toUpperCase() || "";
 
       if (
@@ -61,15 +60,42 @@ export default function StepMessageRenderer({
         !message.required_formats.includes(fileExtension)
       ) {
         setUploadError(
-          `Invalid format: ${fileExtension}. Allowed formats: ${message.required_formats.join(", ")}`
+          `Invalid format: ${fileExtension}. Allowed: ${message.required_formats.join(", ")}`
         );
         continue;
       }
 
-      newFiles.push(file);
+      validFiles.push(file);
     }
 
-    setUploadedFiles((prev) => [...prev, ...newFiles]);
+    return validFiles;
+  };
+
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files) return;
+    const validFiles = validateFiles(Array.from(files));
+    setUploadedFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files) {
+      const validFiles = validateFiles(Array.from(e.dataTransfer.files));
+      setUploadedFiles((prev) => [...prev, ...validFiles]);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -78,8 +104,7 @@ export default function StepMessageRenderer({
 
   const handleDocumentSubmit = () => {
     if (uploadedFiles.length > 0) {
-      const fileNames = uploadedFiles.map((f) => f.name).join(", ");
-      onSubmit(fileNames);
+      onSubmit(uploadedFiles);
       setUploadedFiles([]);
     }
   };
@@ -89,10 +114,15 @@ export default function StepMessageRenderer({
     setUploadedFiles([]);
   };
 
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    return <FileText className="w-5 h-5 text-blue-500" />;
+  };
+
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-4">
       {/* Message Only */}
-      <p className="text-sm whitespace-pre-wrap break-words text-foreground">
+      <p className="text-sm whitespace-pre-wrap break-words text-foreground font-medium">
         {message.message}
       </p>
 
@@ -104,7 +134,7 @@ export default function StepMessageRenderer({
               key={option}
               onClick={() => handleRadioSelect(option)}
               disabled={isLoading}
-              className="px-3 py-2 rounded-full border border-primary bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {option}
             </button>
@@ -114,11 +144,11 @@ export default function StepMessageRenderer({
 
       {/* Checkbox Options */}
       {message.input_type === "checkbox" && message.options.length > 0 && (
-        <div className="space-y-2 pt-2">
+        <div className="space-y-3 pt-2">
           {message.options.map((option) => (
             <label
               key={option}
-              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <input
                 type="checkbox"
@@ -137,7 +167,7 @@ export default function StepMessageRenderer({
             <button
               onClick={handleCheckboxSubmit}
               disabled={isLoading}
-              className="mt-3 px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-3 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
             </button>
@@ -155,9 +185,9 @@ export default function StepMessageRenderer({
             onChange={(e) => setTextValue(e.target.value)}
             onKeyDown={handleTextSubmit}
             disabled={isLoading}
-            className="h-10 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+            className="h-11 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-2">
             Press Enter to send
           </p>
         </div>
@@ -165,102 +195,146 @@ export default function StepMessageRenderer({
 
       {/* Document Upload */}
       {message.input_type === "document" && (
-        <div className="space-y-2 pt-2">
+        <div className="space-y-3 pt-2">
           {uploadError && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              {uploadError}
+              <span>{uploadError}</span>
             </div>
           )}
 
-          {/* File Upload Area */}
-          <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors">
-            <label className="cursor-pointer flex flex-col items-center gap-2">
-              <Upload className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">
-                Click to upload
-              </span>
-              <span className="text-xs text-muted-foreground">
-                or drag and drop
-              </span>
-              {message.required_formats && (
-                <span className="text-xs text-muted-foreground mt-1">
-                  Allowed: {message.required_formats.join(", ")}
-                </span>
-              )}
-              <input
-                type="file"
-                multiple
-                onChange={(e) => handleFileUpload(e.target.files)}
-                disabled={isLoading}
-                accept={message.required_formats
-                  ?.map((fmt) => {
-                    switch (fmt) {
-                      case "PDF":
-                        return ".pdf";
-                      case "JPG":
-                        return ".jpg,.jpeg";
-                      case "PNG":
-                        return ".png";
-                      case "MP4":
-                        return ".mp4";
-                      default:
-                        return "";
-                    }
-                  })
-                  .join(",")}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          {/* Uploaded Files List */}
-          {uploadedFiles.length > 0 && (
-            <div className="space-y-2">
-              {uploadedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm text-foreground truncate">
-                      {file.name}
-                    </span>
-                    {file.size && (
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        ({(file.size / 1024).toFixed(1)}KB)
-                      </span>
-                    )}
+          {uploadedFiles.length === 0 ? (
+            <>
+              {/* File Upload Area - Modern Style */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
+                  dragActive
+                    ? "border-primary/80 bg-primary/10"
+                    : "border-border hover:border-primary/50 hover:bg-primary/5"
+                }`}
+              >
+                <label className="cursor-pointer flex flex-col items-center gap-3">
+                  <div className={`p-4 rounded-full ${dragActive ? 'bg-primary/20' : 'bg-muted'}`}>
+                    <Upload className={`w-6 h-6 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
-                  <button
-                    onClick={() => removeFile(index)}
+                  <div className="space-y-1">
+                    <span className="text-sm font-semibold text-foreground block">
+                      Click to upload or drag and drop
+                    </span>
+                    <span className="text-xs text-muted-foreground block">
+                      {message.required_formats
+                        ? `${message.required_formats.join(", ")} files`
+                        : "Any file type"}
+                    </span>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={(e) => handleFileUpload(e.target.files)}
                     disabled={isLoading}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    accept={message.required_formats
+                      ?.map((fmt) => {
+                        switch (fmt) {
+                          case "PDF":
+                            return ".pdf";
+                          case "JPG":
+                            return ".jpg,.jpeg";
+                          case "PNG":
+                            return ".png";
+                          case "MP4":
+                            return ".mp4";
+                          default:
+                            return "";
+                        }
+                      })
+                      .filter(Boolean)
+                      .join(",")}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Skip Button - Always visible when no files uploaded */}
+              <button
+                onClick={handleSkip}
+                disabled={isLoading}
+                className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Skip for now
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Uploaded Files List - Modern Style */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span className="text-sm font-medium text-foreground">
+                    {uploadedFiles.length} {uploadedFiles.length === 1 ? "file" : "files"} selected
+                  </span>
+                </div>
+
+                {uploadedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {getFileIcon(file.name)}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {file.name}
+                        </p>
+                        {file.size && (
+                          <p className="text-xs text-muted-foreground">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      disabled={isLoading}
+                      className="ml-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Add More Files Option */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="w-full px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
+                >
+                  + Add more files
+                </button>
+
+                {/* Submit & Skip Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={handleDocumentSubmit}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? "Uploading..." : "Upload"}
+                  </button>
+                  <button
+                    onClick={handleSkip}
+                    disabled={isLoading}
+                    className="px-4 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Skip
                   </button>
                 </div>
-              ))}
-
-              {/* Upload & Skip Buttons */}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleDocumentSubmit}
-                  disabled={isLoading || uploadedFiles.length === 0}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Submit
-                </button>
-                <button
-                  onClick={handleSkip}
-                  disabled={isLoading}
-                  className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Skip
-                </button>
               </div>
-            </div>
+            </>
           )}
         </div>
       )}
