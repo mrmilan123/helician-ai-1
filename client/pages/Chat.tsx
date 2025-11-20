@@ -623,32 +623,37 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Type your message here..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                disabled={isLoading}
-                className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
-              />
-              <Button
-                type="submit"
-                disabled={isLoading || !inputValue.trim()}
-                className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </form>
+        {/* Input Area - Only show if last message is not a step message */}
+        {currentConversation?.messages &&
+        currentConversation.messages.length > 0 &&
+        currentConversation.messages[currentConversation.messages.length - 1]
+          ?.contentType !== "step" ? (
+          <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Type your message here..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  disabled={isLoading}
+                  className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+                />
+                <Button
+                  type="submit"
+                  disabled={isLoading || !inputValue.trim()}
+                  className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {isLoading ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </form>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
