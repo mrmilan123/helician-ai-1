@@ -432,55 +432,75 @@ export default function Chat() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-background to-background/50">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
             {currentConversation?.messages &&
             currentConversation.messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-4">
-                  <MessageSquare className="w-8 h-8 text-primary" />
+              <div className="h-full flex flex-col items-center justify-center text-center min-h-96">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center mb-6">
+                  <MessageSquare className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold font-display text-foreground mb-2">
+                <h3 className="text-2xl font-bold font-display text-foreground mb-3">
                   Start your conversation
                 </h3>
-                <p className="text-muted-foreground max-w-sm">
-                  Type a message to begin discussing this case with the
+                <p className="text-base text-muted-foreground max-w-sm mb-6">
+                  Type a message below to begin discussing this case with the
                   assistant.
                 </p>
+                <div className="px-4 py-3 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground">
+                  The assistant is ready to help with your <span className="font-semibold text-foreground">{caseType}</span> case
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {currentConversation?.messages.map((msg, index) => (
                   <div
                     key={index}
-                    className={`flex ${
+                    className={`flex gap-3 ${
                       msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    } animate-in fade-in slide-in-from-bottom-2 duration-300`}
                   >
+                    {msg.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                      </div>
+                    )}
                     <div
-                      className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-3 rounded-lg ${
+                      className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg ${
                         msg.role === "user"
-                          ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-br-none"
-                          : "bg-muted text-foreground rounded-bl-none"
-                      }`}
+                          ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-2xl rounded-tr-md shadow-lg"
+                          : "bg-muted/60 border border-border text-foreground rounded-2xl rounded-tl-md"
+                      } px-4 py-3`}
                     >
                       {renderMessageContent(msg)}
-                      <p className="text-xs mt-1 opacity-70">
+                      <p className={`text-xs mt-2 ${
+                        msg.role === "user"
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground"
+                      }`}>
                         {new Date(msg.time).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </p>
                     </div>
+                    {msg.role === "user" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-xs font-bold text-primary-foreground">You</span>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted text-foreground px-4 py-3 rounded-lg rounded-bl-none">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce delay-100" />
-                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce delay-200" />
+                  <div className="flex justify-start gap-3 animate-in fade-in duration-200">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="bg-muted/60 border border-border text-foreground px-4 py-3 rounded-2xl rounded-tl-md">
+                      <div className="flex gap-2">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   </div>
