@@ -5,21 +5,9 @@ import { Input } from "@/components/ui/input";
 import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string | { url?: string; message?: string; caseType?: string };
-  time: string;
-  contentType: "text" | "image" | "video";
-  caseType?: string;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  messages: ChatMessage[];
-  caseType?: string;
-}
+import StepMessageRenderer from "@/components/StepMessageRenderer";
+import type { ChatMessage, Conversation, StepMessage } from "@/types/message";
+import { isStepMessage as checkIsStepMessage } from "@/types/message";
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -71,15 +59,20 @@ export default function Chat() {
 
           if (response.ok) {
             const chatInitData = await response.json();
+            const messageContent = chatInitData.content?.message || chatInitData.content;
+
+            let contentType: "text" | "image" | "video" | "step" = (chatInitData.type || "text") as any;
+
+            if (checkIsStepMessage(messageContent)) {
+              contentType = "step";
+            }
+
             messages = [
               {
                 role: "assistant" as const,
-                content: chatInitData.content.message,
+                content: messageContent,
                 time: new Date().toISOString(),
-                contentType: (chatInitData.type || "text") as
-                  | "text"
-                  | "image"
-                  | "video",
+                contentType,
                 caseType: caseType,
               },
             ];
@@ -148,6 +141,128 @@ export default function Chat() {
     navigate("/home");
   };
 
+  const handleStepSubmit = async (value: string | string[], skipDocument?: boolean) => {
+    if (!currentConversation) {
+      return;
+    }
+
+    let userMessage: ChatMessage;
+
+    if (skipDocument) {
+      userMessage = {
+        role: "user",
+        content: "Skip for now",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+    } else {
+      const displayValue = Array.isArray(value) ? value.join(", ") : value;
+      userMessage = {
+        role: "user",
+        content: displayValue,
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+    }
+
+    setConversations(
+      conversations.map((conv) => {
+        if (conv.id === currentConversationId) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+          };
+        }
+        return conv;
+      }),
+    );
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetchWithAuth("/webhook/ai-resp", {
+        method: "POST",
+        body: JSON.stringify({
+          caseId: caseId,
+          caseName: caseName || `Case #${caseId}`,
+          caseType: caseType || "",
+          content: {
+            message: Array.isArray(value) ? value.join(", ") : value,
+          },
+          type: "text",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+
+      let assistantMessage: ChatMessage;
+
+      if (checkIsStepMessage(data.content?.message || data.content)) {
+        const stepMsg = data.content?.message || data.content;
+        assistantMessage = {
+          role: "assistant",
+          content: stepMsg,
+          time: new Date().toISOString(),
+          contentType: "step",
+          caseType: data.caseType || caseType,
+        };
+      } else {
+        assistantMessage = {
+          role: "assistant",
+          content:
+            data.content?.message ||
+            data.content ||
+            "I couldn't process your message. Please try again.",
+          time: new Date().toISOString(),
+          contentType: (data.type || "text") as "text" | "image" | "video",
+          caseType: data.caseType || caseType,
+        };
+      }
+
+      setConversations(
+        conversations.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, assistantMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+
+      setConversations(
+        conversations.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, errorMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -200,14 +315,19 @@ export default function Chat() {
       }
 
       const data = await response.json();
+      const messageContent = data.content?.message || data.content;
+
+      let contentType: "text" | "image" | "video" | "step" = (data.type || "text") as any;
+
+      if (checkIsStepMessage(messageContent)) {
+        contentType = "step";
+      }
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content:
-          data.content.message ||
-          "I couldn't process your message. Please try again.",
+        content: messageContent || "I couldn't process your message. Please try again.",
         time: new Date().toISOString(),
-        contentType: (data.type || "text") as "text" | "image" | "video",
+        contentType,
         caseType: data.caseType || caseType,
       };
 
@@ -251,6 +371,19 @@ export default function Chat() {
   };
 
   const renderMessageContent = (message: ChatMessage) => {
+    if (message.contentType === "step") {
+      const stepMessage = message.content as StepMessage;
+      return (
+        <div className="bg-muted/30 rounded-lg p-4 border border-border">
+          <StepMessageRenderer
+            message={stepMessage}
+            onSubmit={handleStepSubmit}
+            isLoading={isLoading}
+          />
+        </div>
+      );
+    }
+
     if (message.contentType === "text") {
       const textContent =
         typeof message.content === "string"
@@ -443,7 +576,9 @@ export default function Chat() {
                       </div>
                     )}
                     <div
-                      className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg ${
+                      className={`${
+                        msg.contentType === "step" ? "max-w-2xl" : "max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
+                      } ${
                         msg.role === "user"
                           ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-2xl rounded-tr-md shadow-lg"
                           : "bg-muted/60 border border-border text-foreground rounded-2xl rounded-tl-md"
@@ -488,32 +623,37 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Type your message here..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                disabled={isLoading}
-                className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
-              />
-              <Button
-                type="submit"
-                disabled={isLoading || !inputValue.trim()}
-                className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </form>
+        {/* Input Area - Only show if last message is not a step message */}
+        {currentConversation?.messages &&
+        currentConversation.messages.length > 0 &&
+        currentConversation.messages[currentConversation.messages.length - 1]
+          ?.contentType !== "step" ? (
+          <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
+            <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Type your message here..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  disabled={isLoading}
+                  className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+                />
+                <Button
+                  type="submit"
+                  disabled={isLoading || !inputValue.trim()}
+                  className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {isLoading ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </form>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
