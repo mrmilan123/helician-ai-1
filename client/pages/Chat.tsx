@@ -162,6 +162,7 @@ export default function Chat() {
       content: messageContent,
       time: new Date().toISOString(),
       contentType: "text",
+      caseType: caseType,
     };
 
     setConversations(
@@ -207,6 +208,7 @@ export default function Chat() {
           "I couldn't process your message. Please try again.",
         time: new Date().toISOString(),
         contentType: (data.type || "text") as "text" | "image" | "video",
+        caseType: data.caseType || caseType,
       };
 
       setConversations(
@@ -229,6 +231,7 @@ export default function Chat() {
         content: "Sorry, I encountered an error. Please try again.",
         time: new Date().toISOString(),
         contentType: "text",
+        caseType: caseType,
       };
 
       setConversations(
