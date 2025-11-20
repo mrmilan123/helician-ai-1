@@ -59,15 +59,20 @@ export default function Chat() {
 
           if (response.ok) {
             const chatInitData = await response.json();
+            const messageContent = chatInitData.content?.message || chatInitData.content;
+
+            let contentType: "text" | "image" | "video" | "step" = (chatInitData.type || "text") as any;
+
+            if (checkIsStepMessage(messageContent)) {
+              contentType = "step";
+            }
+
             messages = [
               {
                 role: "assistant" as const,
-                content: chatInitData.content.message,
+                content: messageContent,
                 time: new Date().toISOString(),
-                contentType: (chatInitData.type || "text") as
-                  | "text"
-                  | "image"
-                  | "video",
+                contentType,
                 caseType: caseType,
               },
             ];
