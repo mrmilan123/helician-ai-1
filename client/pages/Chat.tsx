@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react";
+import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader, Upload, AlertCircle, CheckCircle2, FileText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import StepMessageRenderer from "@/components/StepMessageRenderer";
