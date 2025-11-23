@@ -145,42 +145,19 @@ export default function Chat() {
     navigate("/home");
   };
 
-  const handleStepSubmit = async (value: string | string[] | File[], skipDocument?: boolean) => {
+  const handleStepSubmit = async (value: string | string[]) => {
     if (!currentConversation) {
       return;
     }
 
-    let userMessage: ChatMessage;
-    const isFileUpload = Array.isArray(value) && value.length > 0 && value[0] instanceof File;
-
-    if (skipDocument) {
-      userMessage = {
-        role: "user",
-        content: "Skip for now",
-        time: new Date().toISOString(),
-        contentType: "text",
-        caseType: caseType,
-      };
-    } else if (isFileUpload) {
-      const files = value as File[];
-      const fileNames = files.map((f) => f.name).join(", ");
-      userMessage = {
-        role: "user",
-        content: `Uploaded: ${fileNames}`,
-        time: new Date().toISOString(),
-        contentType: "text",
-        caseType: caseType,
-      };
-    } else {
-      const displayValue = Array.isArray(value) ? value.join(", ") : value;
-      userMessage = {
-        role: "user",
-        content: displayValue,
-        time: new Date().toISOString(),
-        contentType: "text",
-        caseType: caseType,
-      };
-    }
+    const displayValue = Array.isArray(value) ? value.join(", ") : value;
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: displayValue,
+      time: new Date().toISOString(),
+      contentType: "text",
+      caseType: caseType,
+    };
 
     // Add user message first
     setConversations((prev) =>
@@ -198,39 +175,18 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      let response: Response;
-
-      if (isFileUpload) {
-        // Handle file upload with FormData
-        const formData = new FormData();
-        const files = value as File[];
-        files.forEach((file, index) => {
-          formData.append(`file_${index}`, file);
-        });
-        formData.append("caseId", caseId);
-        formData.append("caseName", caseName || `Case #${caseId}`);
-        formData.append("caseType", caseType || "");
-        formData.append("type", "document");
-
-        response = await fetchWithAuth("/webhook/ai-resp", {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        // Handle text submission with JSON
-        response = await fetchWithAuth("/webhook/ai-resp", {
-          method: "POST",
-          body: JSON.stringify({
-            caseId: caseId,
-            caseName: caseName || `Case #${caseId}`,
-            caseType: caseType || "",
-            content: {
-              message: Array.isArray(value) ? value.join(", ") : value,
-            },
-            type: "text",
-          }),
-        });
-      }
+      const response = await fetchWithAuth("/webhook/ai-resp", {
+        method: "POST",
+        body: JSON.stringify({
+          caseId: caseId,
+          caseName: caseName || `Case #${caseId}`,
+          caseType: caseType || "",
+          content: {
+            message: displayValue,
+          },
+          type: "text",
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Failed to get AI response");
