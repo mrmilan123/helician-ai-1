@@ -178,8 +178,9 @@ export default function Chat() {
       };
     }
 
-    setConversations(
-      conversations.map((conv) => {
+    // Add user message first
+    setConversations((prev) =>
+      prev.map((conv) => {
         if (conv.id === currentConversationId) {
           return {
             ...conv,
@@ -257,8 +258,9 @@ export default function Chat() {
         };
       }
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add assistant message using updater function to ensure previous state is included
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,
@@ -279,8 +281,9 @@ export default function Chat() {
         caseType: caseType,
       };
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add error message using updater function
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,
@@ -312,8 +315,9 @@ export default function Chat() {
       caseType: caseType,
     };
 
-    setConversations(
-      conversations.map((conv) => {
+    // Add user message first using updater function
+    setConversations((prev) =>
+      prev.map((conv) => {
         if (conv.id === currentConversationId) {
           return {
             ...conv,
@@ -347,24 +351,25 @@ export default function Chat() {
       }
 
       const data = await response.json();
-      const messageContent = data.content?.message || data.content;
+      const responseContent = data.content?.message || data.content;
 
       let contentType: "text" | "image" | "video" | "step" = (data.type || "text") as any;
 
-      if (checkIsStepMessage(messageContent)) {
+      if (checkIsStepMessage(responseContent)) {
         contentType = "step";
       }
 
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: messageContent || "I couldn't process your message. Please try again.",
+        content: responseContent || "I couldn't process your message. Please try again.",
         time: new Date().toISOString(),
         contentType,
         caseType: data.caseType || caseType,
       };
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add assistant message using updater function
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,
@@ -386,8 +391,9 @@ export default function Chat() {
         caseType: caseType,
       };
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add error message using updater function
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,

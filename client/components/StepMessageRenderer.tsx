@@ -205,32 +205,23 @@ export default function StepMessageRenderer({
 
           {uploadedFiles.length === 0 ? (
             <>
-              {/* File Upload Area - Modern Style */}
+              {/* File Upload Input Area - Like text input */}
               <div
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
+                className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-all ${
                   dragActive
-                    ? "border-primary/80 bg-primary/10"
-                    : "border-border hover:border-primary/50 hover:bg-primary/5"
+                    ? "border-primary/80 bg-primary/5"
+                    : "border-border hover:border-primary/50 bg-input"
                 }`}
               >
-                <label className="cursor-pointer flex flex-col items-center gap-3">
-                  <div className={`p-4 rounded-full ${dragActive ? 'bg-primary/20' : 'bg-muted'}`}>
-                    <Upload className={`w-6 h-6 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-semibold text-foreground block">
-                      Click to upload or drag and drop
-                    </span>
-                    <span className="text-xs text-muted-foreground block">
-                      {message.required_formats
-                        ? `${message.required_formats.join(", ")} files`
-                        : "Any file type"}
-                    </span>
-                  </div>
+                <Upload className={`w-5 h-5 flex-shrink-0 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                <label className="cursor-pointer flex-1">
+                  <span className={`text-sm ${dragActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                    {dragActive ? "Drop files here" : "Click to upload or drag and drop"}
+                  </span>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -259,7 +250,7 @@ export default function StepMessageRenderer({
                 </label>
               </div>
 
-              {/* Skip Button - Always visible when no files uploaded */}
+              {/* Skip Button - Same row for better UX */}
               <button
                 onClick={handleSkip}
                 disabled={isLoading}
@@ -270,7 +261,7 @@ export default function StepMessageRenderer({
             </>
           ) : (
             <>
-              {/* Uploaded Files List - Modern Style */}
+              {/* Uploaded Files List */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
