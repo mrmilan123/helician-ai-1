@@ -178,8 +178,9 @@ export default function Chat() {
       };
     }
 
-    setConversations(
-      conversations.map((conv) => {
+    // Add user message first
+    setConversations((prev) =>
+      prev.map((conv) => {
         if (conv.id === currentConversationId) {
           return {
             ...conv,
@@ -257,8 +258,9 @@ export default function Chat() {
         };
       }
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add assistant message using updater function to ensure previous state is included
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,
@@ -279,8 +281,9 @@ export default function Chat() {
         caseType: caseType,
       };
 
-      setConversations(
-        conversations.map((conv) => {
+      // Add error message using updater function
+      setConversations((prev) =>
+        prev.map((conv) => {
           if (conv.id === currentConversationId) {
             return {
               ...conv,
