@@ -1,12 +1,11 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, X, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import type { StepMessage } from "@/types/message";
 
 interface StepMessageRendererProps {
   message: StepMessage;
-  onSubmit: (value: string | string[] | File[], skipDocument?: boolean) => void;
+  onSubmit: (value: string | string[], skipDocument?: boolean) => void;
   isLoading?: boolean;
 }
 
@@ -18,10 +17,6 @@ export default function StepMessageRenderer({
   const [selectedValue, setSelectedValue] = useState<string>("");
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [textValue, setTextValue] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [uploadError, setUploadError] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRadioSelect = (value: string) => {
     setSelectedValue(value);
