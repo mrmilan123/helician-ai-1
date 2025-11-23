@@ -412,6 +412,284 @@ export default function Chat() {
     }
   };
 
+  const validateFiles = (files: File[], requiredFormats?: string[]): File[] => {
+    setUploadError("");
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      const fileExtension = file.name.split(".").pop()?.toUpperCase() || "";
+
+      if (
+        requiredFormats &&
+        !requiredFormats.includes(fileExtension)
+      ) {
+        setUploadError(
+          `Invalid format: ${fileExtension}. Allowed: ${requiredFormats.join(", ")}`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    return validFiles;
+  };
+
+  const handleFileUpload = (files: FileList | null, requiredFormats?: string[]) => {
+    if (!files) return;
+    const validFiles = validateFiles(Array.from(files), requiredFormats);
+    setUploadedFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, requiredFormats?: string[]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files) {
+      const validFiles = validateFiles(Array.from(e.dataTransfer.files), requiredFormats);
+      setUploadedFiles((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDocumentSubmit = async () => {
+    if (uploadedFiles.length === 0 || !currentConversation) {
+      return;
+    }
+
+    const fileNames = uploadedFiles.map((f) => f.name).join(", ");
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: `Uploaded: ${fileNames}`,
+      time: new Date().toISOString(),
+      contentType: "text",
+      caseType: caseType,
+    };
+
+    setConversations((prev) =>
+      prev.map((conv) => {
+        if (conv.id === currentConversationId) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+          };
+        }
+        return conv;
+      }),
+    );
+
+    setUploadedFiles([]);
+    setUploadError("");
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file, index) => {
+        formData.append(`file_${index}`, file);
+      });
+      formData.append("caseId", caseId);
+      formData.append("caseName", caseName || `Case #${caseId}`);
+      formData.append("caseType", caseType || "");
+      formData.append("type", "document");
+
+      const response = await fetchWithAuth("/webhook/ai-resp", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+
+      let assistantMessage: ChatMessage;
+
+      if (checkIsStepMessage(data.content?.message || data.content)) {
+        const stepMsg = data.content?.message || data.content;
+        assistantMessage = {
+          role: "assistant",
+          content: stepMsg,
+          time: new Date().toISOString(),
+          contentType: "step",
+          caseType: data.caseType || caseType,
+        };
+      } else {
+        assistantMessage = {
+          role: "assistant",
+          content:
+            data.content?.message ||
+            data.content ||
+            "I couldn't process your message. Please try again.",
+          time: new Date().toISOString(),
+          contentType: (data.type || "text") as "text" | "image" | "video",
+          caseType: data.caseType || caseType,
+        };
+      }
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, assistantMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } catch (error) {
+      console.error("Error uploading files:", error);
+
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: "Sorry, I encountered an error uploading your files. Please try again.",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, errorMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSkipDocument = async () => {
+    if (!currentConversation) {
+      return;
+    }
+
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: "Skip for now",
+      time: new Date().toISOString(),
+      contentType: "text",
+      caseType: caseType,
+    };
+
+    setConversations((prev) =>
+      prev.map((conv) => {
+        if (conv.id === currentConversationId) {
+          return {
+            ...conv,
+            messages: [...conv.messages, userMessage],
+          };
+        }
+        return conv;
+      }),
+    );
+
+    setUploadedFiles([]);
+    setUploadError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetchWithAuth("/webhook/ai-resp", {
+        method: "POST",
+        body: JSON.stringify({
+          caseId: caseId,
+          caseName: caseName || `Case #${caseId}`,
+          caseType: caseType || "",
+          content: {
+            message: "Skip for now",
+          },
+          type: "text",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+
+      let assistantMessage: ChatMessage;
+
+      if (checkIsStepMessage(data.content?.message || data.content)) {
+        const stepMsg = data.content?.message || data.content;
+        assistantMessage = {
+          role: "assistant",
+          content: stepMsg,
+          time: new Date().toISOString(),
+          contentType: "step",
+          caseType: data.caseType || caseType,
+        };
+      } else {
+        assistantMessage = {
+          role: "assistant",
+          content:
+            data.content?.message ||
+            data.content ||
+            "I couldn't process your message. Please try again.",
+          time: new Date().toISOString(),
+          contentType: (data.type || "text") as "text" | "image" | "video",
+          caseType: data.caseType || caseType,
+        };
+      }
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, assistantMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } catch (error) {
+      console.error("Error skipping document:", error);
+
+      const errorMessage: ChatMessage = {
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again.",
+        time: new Date().toISOString(),
+        contentType: "text",
+        caseType: caseType,
+      };
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id === currentConversationId) {
+            return {
+              ...conv,
+              messages: [...conv.messages, errorMessage],
+            };
+          }
+          return conv;
+        }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderMessageContent = (message: ChatMessage) => {
     if (message.contentType === "step") {
       const stepMessage = message.content as StepMessage;
