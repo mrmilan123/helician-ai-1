@@ -899,36 +899,196 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Input Area - Only show if last message is not a step message */}
+        {/* Input Area - Show text input or file upload based on last message type */}
         {currentConversation?.messages &&
-        currentConversation.messages.length > 0 &&
-        currentConversation.messages[currentConversation.messages.length - 1]
-          ?.contentType !== "step" ? (
-          <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
-            <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Type your message here..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  disabled={isLoading}
-                  className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
-                />
-                <Button
-                  type="submit"
-                  disabled={isLoading || !inputValue.trim()}
-                  className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {isLoading ? (
-                    <Loader className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </Button>
-              </form>
-            </div>
-          </div>
+        currentConversation.messages.length > 0 ? (
+          (() => {
+            const lastMessage = currentConversation.messages[currentConversation.messages.length - 1];
+            const isStepMessageWithDocumentInput =
+              lastMessage?.contentType === "step" &&
+              checkIsStepMessage(lastMessage.content) &&
+              (lastMessage.content as StepMessage).input_type === "document";
+
+            return isStepMessageWithDocumentInput ? (
+              // File Upload Area
+              <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
+                  <div className="space-y-3">
+                    {uploadError && (
+                      <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{uploadError}</span>
+                      </div>
+                    )}
+
+                    {uploadedFiles.length === 0 ? (
+                      <>
+                        <div
+                          onDragEnter={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDragOver={handleDrag}
+                          onDrop={(e) => {
+                            const stepMsg = lastMessage.content as StepMessage;
+                            handleDrop(e, stepMsg.required_formats);
+                          }}
+                          className={`relative flex items-center gap-3 px-4 py-3 border rounded-xl transition-all cursor-pointer ${
+                            dragActive
+                              ? "border-primary/80 bg-primary/5"
+                              : "border-border hover:border-primary/50 bg-input"
+                          }`}
+                        >
+                          <Upload className={`w-5 h-5 flex-shrink-0 ${dragActive ? "text-primary" : "text-muted-foreground"}`} />
+                          <label className="cursor-pointer flex-1">
+                            <span className={`text-sm ${dragActive ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                              {dragActive ? "Drop files here" : "Click to upload or drag and drop"}
+                            </span>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              multiple
+                              onChange={(e) => {
+                                const stepMsg = lastMessage.content as StepMessage;
+                                handleFileUpload(e.target.files, stepMsg.required_formats);
+                              }}
+                              disabled={isLoading}
+                              accept={
+                                checkIsStepMessage(lastMessage.content)
+                                  ? (() => {
+                                      const stepMsg = lastMessage.content as StepMessage;
+                                      return stepMsg.required_formats
+                                        ?.map((fmt) => {
+                                          switch (fmt) {
+                                            case "PDF":
+                                              return ".pdf";
+                                            case "JPG":
+                                              return ".jpg,.jpeg";
+                                            case "PNG":
+                                              return ".png";
+                                            case "MP4":
+                                              return ".mp4";
+                                            default:
+                                              return "";
+                                          }
+                                        })
+                                        .filter(Boolean)
+                                        .join(",") || undefined;
+                                    })()
+                                  : undefined
+                              }
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+
+                        <button
+                          onClick={handleSkipDocument}
+                          disabled={isLoading}
+                          className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Skip for now
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 px-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <span className="text-sm font-medium text-foreground">
+                              {uploadedFiles.length} {uploadedFiles.length === 1 ? "file" : "files"} selected
+                            </span>
+                          </div>
+
+                          {uploadedFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {file.name}
+                                  </p>
+                                  {file.size && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeFile(index)}
+                                disabled={isLoading}
+                                className="ml-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ))}
+
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isLoading}
+                            className="w-full px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
+                          >
+                            + Add more files
+                          </button>
+
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              onClick={handleDocumentSubmit}
+                              disabled={isLoading}
+                              className="flex-1 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium h-12"
+                            >
+                              {isLoading ? (
+                                <Loader className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Upload"
+                              )}
+                            </Button>
+                            <button
+                              onClick={handleSkipDocument}
+                              disabled={isLoading}
+                              className="px-4 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : lastMessage?.contentType !== "step" ? (
+              // Text Input Area
+              <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
+                <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Type your message here..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      disabled={isLoading}
+                      className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={isLoading || !inputValue.trim()}
+                      className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {isLoading ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            ) : null;
+          })()
         ) : null}
       </div>
     </div>
