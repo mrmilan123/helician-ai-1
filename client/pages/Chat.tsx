@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader } from "lucide-react";
+import { LogOut, Send, Plus, MessageSquare, Menu, X, Loader, Upload, AlertCircle, CheckCircle2, FileText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthenticatedFetch } from "@/hooks/useAuthenticatedFetch";
 import StepMessageRenderer from "@/components/StepMessageRenderer";
@@ -20,6 +20,10 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get case data from navigation state
@@ -298,6 +302,74 @@ export default function Chat() {
     }
   };
 
+  const validateFiles = (files: File[], requiredFormats?: string[]): File[] => {
+    setUploadError("");
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      const fileExtension = file.name.split(".").pop()?.toUpperCase() || "";
+
+      if (
+        requiredFormats &&
+        !requiredFormats.includes(fileExtension)
+      ) {
+        setUploadError(
+          `Invalid format: ${fileExtension}. Allowed: ${requiredFormats.join(", ")}`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    return validFiles;
+  };
+
+  const handleFileUpload = (files: FileList | null, requiredFormats?: string[]) => {
+    if (!files) return;
+    const validFiles = validateFiles(Array.from(files), requiredFormats);
+    setUploadedFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, requiredFormats?: string[]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files) {
+      const validFiles = validateFiles(Array.from(e.dataTransfer.files), requiredFormats);
+      setUploadedFiles((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDocumentSubmit = () => {
+    if (uploadedFiles.length > 0) {
+      handleStepSubmit(uploadedFiles);
+      setUploadedFiles([]);
+      setUploadError("");
+    }
+  };
+
+  const handleSkipDocument = () => {
+    handleStepSubmit("", true);
+    setUploadedFiles([]);
+    setUploadError("");
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -412,13 +484,7 @@ export default function Chat() {
     if (message.contentType === "step") {
       const stepMessage = message.content as StepMessage;
       return (
-        <div className="bg-muted/30 rounded-lg p-4 border border-border">
-          <StepMessageRenderer
-            message={stepMessage}
-            onSubmit={handleStepSubmit}
-            isLoading={isLoading}
-          />
-        </div>
+        <p className="text-sm whitespace-pre-wrap break-words">{stepMessage.message}</p>
       );
     }
 
@@ -661,34 +727,178 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Input Area - Only show if last message is not a step message */}
-        {currentConversation?.messages &&
-        currentConversation.messages.length > 0 &&
-        currentConversation.messages[currentConversation.messages.length - 1]
-          ?.contentType !== "step" ? (
+        {/* Input Area */}
+        {currentConversation?.messages && currentConversation.messages.length > 0 ? (
           <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Type your message here..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  disabled={isLoading}
-                  className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
-                />
-                <Button
-                  type="submit"
-                  disabled={isLoading || !inputValue.trim()}
-                  className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {isLoading ? (
-                    <Loader className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
+              {/* Check if last message is a step message with document input */}
+              {currentConversation.messages[currentConversation.messages.length - 1]?.contentType === "step" ? (
+                <div className="space-y-3">
+                  {uploadError && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{uploadError}</span>
+                    </div>
                   )}
-                </Button>
-              </form>
+
+                  {uploadedFiles.length === 0 ? (
+                    <div className="space-y-3">
+                      {/* File Upload Input Area */}
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={(e) => {
+                          const stepMsg = currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage;
+                          handleDrop(e, stepMsg?.required_formats);
+                        }}
+                        className={`relative flex items-center gap-2 px-4 py-3 border rounded-xl transition-all ${
+                          dragActive
+                            ? "border-primary/80 bg-primary/5"
+                            : "border-border hover:border-primary/50 bg-input"
+                        }`}
+                      >
+                        <Upload className={`w-5 h-5 flex-shrink-0 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <label className="cursor-pointer flex-1">
+                          <span className={`text-sm ${dragActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                            {dragActive ? "Drop files here" : "Click to upload or drag and drop"}
+                          </span>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            onChange={(e) => {
+                              const stepMsg = currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage;
+                              handleFileUpload(e.target.files, stepMsg?.required_formats);
+                            }}
+                            disabled={isLoading}
+                            accept={(() => {
+                              const stepMsg = currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage;
+                              return stepMsg?.required_formats
+                                ?.map((fmt) => {
+                                  switch (fmt) {
+                                    case "PDF":
+                                      return ".pdf";
+                                    case "JPG":
+                                      return ".jpg,.jpeg";
+                                    case "PNG":
+                                      return ".png";
+                                    case "MP4":
+                                      return ".mp4";
+                                    default:
+                                      return "";
+                                  }
+                                })
+                                .filter(Boolean)
+                                .join(",") || "";
+                            })()}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Skip Button */}
+                      <button
+                        onClick={handleSkipDocument}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Skip for now
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Uploaded Files List */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 px-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium text-foreground">
+                            {uploadedFiles.length} {uploadedFiles.length === 1 ? "file" : "files"} selected
+                          </span>
+                        </div>
+
+                        {uploadedFiles.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {file.name}
+                                </p>
+                                {file.size && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              disabled={isLoading}
+                              className="ml-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Add More Files Option */}
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isLoading}
+                          className="w-full px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
+                        >
+                          + Add more files
+                        </button>
+
+                        {/* Submit & Skip Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={handleDocumentSubmit}
+                            disabled={isLoading}
+                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isLoading ? "Uploading..." : "Upload"}
+                          </button>
+                          <button
+                            onClick={handleSkipDocument}
+                            disabled={isLoading}
+                            className="px-4 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Normal Text Input */
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Type your message here..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    disabled={isLoading}
+                    className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isLoading || !inputValue.trim()}
+                    className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {isLoading ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </form>
+              )}
             </div>
           </div>
         ) : null}
