@@ -302,6 +302,74 @@ export default function Chat() {
     }
   };
 
+  const validateFiles = (files: File[], requiredFormats?: string[]): File[] => {
+    setUploadError("");
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      const fileExtension = file.name.split(".").pop()?.toUpperCase() || "";
+
+      if (
+        requiredFormats &&
+        !requiredFormats.includes(fileExtension)
+      ) {
+        setUploadError(
+          `Invalid format: ${fileExtension}. Allowed: ${requiredFormats.join(", ")}`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    return validFiles;
+  };
+
+  const handleFileUpload = (files: FileList | null, requiredFormats?: string[]) => {
+    if (!files) return;
+    const validFiles = validateFiles(Array.from(files), requiredFormats);
+    setUploadedFiles((prev) => [...prev, ...validFiles]);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, requiredFormats?: string[]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files) {
+      const validFiles = validateFiles(Array.from(e.dataTransfer.files), requiredFormats);
+      setUploadedFiles((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDocumentSubmit = () => {
+    if (uploadedFiles.length > 0) {
+      handleStepSubmit(uploadedFiles);
+      setUploadedFiles([]);
+      setUploadError("");
+    }
+  };
+
+  const handleSkipDocument = () => {
+    handleStepSubmit("", true);
+    setUploadedFiles([]);
+    setUploadError("");
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
