@@ -193,8 +193,8 @@ export default function StepMessageRenderer({
         </div>
       )}
 
-      {/* Document Upload */}
-      {message.input_type === "document" && (
+      {/* Document/File Upload */}
+      {(message.input_type === "document" || message.input_type === "file") && (
         <div className="space-y-3 pt-2">
           {uploadError && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
