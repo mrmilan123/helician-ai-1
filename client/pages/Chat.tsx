@@ -742,8 +742,128 @@ export default function Chat() {
         {currentConversation?.messages && currentConversation.messages.length > 0 ? (
           <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-              {/* Check if last message is a step message with document/file input */}
+              {/* Check if last message is a step message with radio input */}
               {currentConversation.messages[currentConversation.messages.length - 1]?.contentType === "step" &&
+               (currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.input_type === "radio" ? (
+                <div className="space-y-4">
+                  {/* Radio Options as Hovering Bubbles */}
+                  <div className="flex flex-wrap gap-2 justify-start">
+                    {((currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.options || []).map((option) => (
+                      <button
+                        key={option}
+                        onClick={async () => {
+                          setIsLoading(true);
+                          try {
+                            const response = await fetchWithAuth("/webhook/ai-resp", {
+                              method: "POST",
+                              body: JSON.stringify({
+                                caseId: caseId,
+                                caseName: caseName || `Case #${caseId}`,
+                                caseType: caseType || "",
+                                content: {
+                                  message: option,
+                                },
+                                type: "text",
+                              }),
+                            });
+
+                            if (!response.ok) {
+                              throw new Error("Failed to get AI response");
+                            }
+
+                            const data = await response.json();
+                            const responseContent = data.content?.message || data.content;
+
+                            let contentType: "text" | "image" | "video" | "step" = (data.type || "text") as any;
+
+                            if (checkIsStepMessage(responseContent)) {
+                              contentType = "step";
+                            }
+
+                            const userMessage: ChatMessage = {
+                              role: "user",
+                              content: option,
+                              time: new Date().toISOString(),
+                              contentType: "text",
+                              caseType: caseType,
+                            };
+
+                            const assistantMessage: ChatMessage = {
+                              role: "assistant",
+                              content: responseContent || "I couldn't process your selection. Please try again.",
+                              time: new Date().toISOString(),
+                              contentType,
+                              caseType: data.caseType || caseType,
+                            };
+
+                            setConversations((prev) =>
+                              prev.map((conv) => {
+                                if (conv.id === currentConversationId) {
+                                  return {
+                                    ...conv,
+                                    messages: [...conv.messages, userMessage, assistantMessage],
+                                  };
+                                }
+                                return conv;
+                              }),
+                            );
+                          } catch (error) {
+                            console.error("Error sending message:", error);
+
+                            const errorMessage: ChatMessage = {
+                              role: "assistant",
+                              content: "Sorry, I encountered an error. Please try again.",
+                              time: new Date().toISOString(),
+                              contentType: "text",
+                              caseType: caseType,
+                            };
+
+                            setConversations((prev) =>
+                              prev.map((conv) => {
+                                if (conv.id === currentConversationId) {
+                                  return {
+                                    ...conv,
+                                    messages: [...conv.messages, errorMessage],
+                                  };
+                                }
+                                return conv;
+                              }),
+                            );
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        disabled={isLoading}
+                        className="px-4 py-2.5 rounded-full border border-border bg-muted hover:bg-primary/10 text-foreground hover:text-primary text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap animate-in fade-in slide-in-from-bottom-2"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Regular Input Below */}
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Type your message here..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      disabled={isLoading}
+                      className="flex-1 h-12 border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={isLoading || !inputValue.trim()}
+                      className="h-12 px-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {isLoading ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </form>
+                </div>
+              ) : currentConversation.messages[currentConversation.messages.length - 1]?.contentType === "step" &&
                ((currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.input_type === "document" ||
                 (currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.input_type === "file") ? (
                 <div className="space-y-3">
