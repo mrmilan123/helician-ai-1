@@ -491,7 +491,11 @@ export default function Chat() {
     if (message.contentType === "step") {
       const stepMessage = message.content as StepMessage;
       return (
-        <p className="text-sm whitespace-pre-wrap break-words">{stepMessage.message}</p>
+        <StepMessageRenderer
+          message={stepMessage}
+          onSubmit={handleStepSubmit}
+          isLoading={isLoading}
+        />
       );
     }
 
