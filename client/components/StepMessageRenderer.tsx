@@ -126,15 +126,15 @@ export default function StepMessageRenderer({
         {message.message}
       </p>
 
-      {/* Radio Options - Floating Buttons */}
+      {/* Radio Options - Horizontal Pills */}
       {message.input_type === "radio" && message.options.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-4 justify-start">
           {message.options.map((option) => (
             <button
               key={option}
               onClick={() => handleRadioSelect(option)}
               disabled={isLoading}
-              className="px-4 py-2.5 rounded-full border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-primary/10 text-foreground hover:text-primary text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {option}
             </button>
