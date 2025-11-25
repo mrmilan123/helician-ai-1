@@ -149,60 +149,60 @@ export default function StepMessageRenderer({
         </div>
       )}
 
-      {/* Checkbox Options */}
-      {message.input_type === "checkbox" && message.options.length > 0 && (
-        <div className="space-y-3 pt-2">
-          {message.options.map((option) => (
-            <label
-              key={option}
-              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <input
-                type="checkbox"
-                value={option}
-                checked={selectedValues.includes(option)}
-                onChange={() => handleCheckboxChange(option)}
-                disabled={isLoading}
-                className="w-4 h-4 cursor-pointer accent-primary"
-              />
-              <span className="text-sm text-foreground">{option}</span>
-            </label>
-          ))}
+          {/* Checkbox Options */}
+          {message.input_type === "checkbox" && message.options.length > 0 && (
+            <div className="space-y-3">
+              {message.options.map((option) => (
+                <label
+                  key={option}
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <input
+                    type="checkbox"
+                    value={option}
+                    checked={selectedValues.includes(option)}
+                    onChange={() => handleCheckboxChange(option)}
+                    disabled={isLoading}
+                    className="w-4 h-4 cursor-pointer accent-primary"
+                  />
+                  <span className="text-sm text-foreground">{option}</span>
+                </label>
+              ))}
 
-          {/* Submit/Continue Button - Shows only after selection */}
-          {selectedValues.length > 0 && (
-            <button
-              onClick={handleCheckboxSubmit}
-              disabled={isLoading}
-              className="mt-3 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Continue
-            </button>
+              {/* Submit/Continue Button - Shows only after selection */}
+              {selectedValues.length > 0 && (
+                <button
+                  onClick={handleCheckboxSubmit}
+                  disabled={isLoading}
+                  className="mt-3 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continue
+                </button>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Text Input */}
-      {message.input_type === "text" && (
-        <div className="pt-2">
-          <Input
-            type="text"
-            placeholder="Type your response..."
-            value={textValue}
-            onChange={(e) => setTextValue(e.target.value)}
-            onKeyDown={handleTextSubmit}
-            disabled={isLoading}
-            className="h-11 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Press Enter to send
-          </p>
-        </div>
-      )}
+          {/* Text Input */}
+          {message.input_type === "text" && (
+            <div>
+              <Input
+                type="text"
+                placeholder="Type your response..."
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={handleTextSubmit}
+                disabled={isLoading}
+                className="h-11 border border-border rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 bg-input text-foreground placeholder:text-muted-foreground transition-all"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Press Enter to send
+              </p>
+            </div>
+          )}
 
-      {/* Document/File Upload */}
-      {(message.input_type === "document" || message.input_type === "file") && (
-        <div className="space-y-3 pt-2">
+          {/* Document/File Upload */}
+          {(message.input_type === "document" || message.input_type === "file") && (
+            <div className="space-y-3">
           {uploadError && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
