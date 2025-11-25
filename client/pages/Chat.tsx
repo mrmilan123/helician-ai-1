@@ -731,8 +731,10 @@ export default function Chat() {
         {currentConversation?.messages && currentConversation.messages.length > 0 ? (
           <div className="border-t border-border bg-gradient-to-t from-card to-card/50 backdrop-blur-sm sticky bottom-0">
             <div className="max-w-4xl mx-auto px-4 md:px-6 py-4">
-              {/* Check if last message is a step message with document input */}
-              {currentConversation.messages[currentConversation.messages.length - 1]?.contentType === "step" ? (
+              {/* Check if last message is a step message with document/file input */}
+              {currentConversation.messages[currentConversation.messages.length - 1]?.contentType === "step" &&
+               ((currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.input_type === "document" ||
+                (currentConversation.messages[currentConversation.messages.length - 1]?.content as StepMessage)?.input_type === "file") ? (
                 <div className="space-y-3">
                   {uploadError && (
                     <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">

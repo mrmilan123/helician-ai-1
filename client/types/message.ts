@@ -1,4 +1,4 @@
-export type InputType = "radio" | "checkbox" | "document" | "text";
+export type InputType = "radio" | "checkbox" | "document" | "file" | "text";
 
 export interface StepMessage {
   step_number: string;
