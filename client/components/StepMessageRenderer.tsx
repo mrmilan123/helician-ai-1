@@ -146,8 +146,6 @@ export default function StepMessageRenderer({
               ))}
             </div>
           )}
-        </div>
-      )}
 
           {/* Checkbox Options */}
           {message.input_type === "checkbox" && message.options.length > 0 && (
@@ -203,136 +201,138 @@ export default function StepMessageRenderer({
           {/* Document/File Upload */}
           {(message.input_type === "document" || message.input_type === "file") && (
             <div className="space-y-3">
-          {uploadError && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{uploadError}</span>
-            </div>
-          )}
-
-          {uploadedFiles.length === 0 ? (
-            <>
-              {/* File Upload Input Area - Like text input */}
-              <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-all ${
-                  dragActive
-                    ? "border-primary/80 bg-primary/5"
-                    : "border-border hover:border-primary/50 bg-input"
-                }`}
-              >
-                <Upload className={`w-5 h-5 flex-shrink-0 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                <label className="cursor-pointer flex-1">
-                  <span className={`text-sm ${dragActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                    {dragActive ? "Drop files here" : "Click to upload or drag and drop"}
-                  </span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    onChange={(e) => handleFileUpload(e.target.files)}
-                    disabled={isLoading}
-                    accept={message.required_formats
-                      ?.map((fmt) => {
-                        switch (fmt) {
-                          case "PDF":
-                            return ".pdf";
-                          case "JPG":
-                            return ".jpg,.jpeg";
-                          case "PNG":
-                            return ".png";
-                          case "MP4":
-                            return ".mp4";
-                          default:
-                            return "";
-                        }
-                      })
-                      .filter(Boolean)
-                      .join(",")}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Skip Button - Same row for better UX */}
-              <button
-                onClick={handleSkip}
-                disabled={isLoading}
-                className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Skip for now
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Uploaded Files List */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 px-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-medium text-foreground">
-                    {uploadedFiles.length} {uploadedFiles.length === 1 ? "file" : "files"} selected
-                  </span>
+              {uploadError && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{uploadError}</span>
                 </div>
+              )}
 
-                {uploadedFiles.map((file, index) => (
+              {uploadedFiles.length === 0 ? (
+                <>
+                  {/* File Upload Input Area */}
                   <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`relative flex items-center gap-2 px-4 py-3 border rounded-lg transition-all ${
+                      dragActive
+                        ? "border-primary/80 bg-primary/5"
+                        : "border-border hover:border-primary/50 bg-input"
+                    }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {getFileIcon(file.name)}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {file.name}
-                        </p>
-                        {file.size && (
-                          <p className="text-xs text-muted-foreground">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      disabled={isLoading}
-                      className="ml-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <Upload className={`w-5 h-5 flex-shrink-0 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <label className="cursor-pointer flex-1">
+                      <span className={`text-sm ${dragActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                        {dragActive ? "Drop files here" : "Click to upload or drag and drop"}
+                      </span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                        disabled={isLoading}
+                        accept={message.required_formats
+                          ?.map((fmt) => {
+                            switch (fmt) {
+                              case "PDF":
+                                return ".pdf";
+                              case "JPG":
+                                return ".jpg,.jpeg";
+                              case "PNG":
+                                return ".png";
+                              case "MP4":
+                                return ".mp4";
+                              default:
+                                return "";
+                            }
+                          })
+                          .filter(Boolean)
+                          .join(",")}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                ))}
 
-                {/* Add More Files Option */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="w-full px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
-                >
-                  + Add more files
-                </button>
-
-                {/* Submit & Skip Buttons */}
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={handleDocumentSubmit}
-                    disabled={isLoading}
-                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? "Uploading..." : "Upload"}
-                  </button>
+                  {/* Skip Button */}
                   <button
                     onClick={handleSkip}
                     disabled={isLoading}
-                    className="px-4 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Skip
+                    Skip for now
                   </button>
-                </div>
-              </div>
-            </>
+                </>
+              ) : (
+                <>
+                  {/* Uploaded Files List */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 px-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <span className="text-sm font-medium text-foreground">
+                        {uploadedFiles.length} {uploadedFiles.length === 1 ? "file" : "files"} selected
+                      </span>
+                    </div>
+
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border hover:bg-muted/60 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {getFileIcon(file.name)}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {file.name}
+                            </p>
+                            {file.size && (
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          disabled={isLoading}
+                          className="ml-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Add More Files Option */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      className="w-full px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50"
+                    >
+                      + Add more files
+                    </button>
+
+                    {/* Submit & Skip Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleDocumentSubmit}
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? "Uploading..." : "Upload"}
+                      </button>
+                      <button
+                        onClick={handleSkip}
+                        disabled={isLoading}
+                        className="px-4 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Skip
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
