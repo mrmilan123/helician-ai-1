@@ -129,24 +129,8 @@ export default function StepMessageRenderer({
       </div>
 
       {/* Input Section with Visual Separator */}
-      {message.input_type && (message.options.length > 0 || message.input_type === "text" || message.input_type === "document" || message.input_type === "file") && (
+      {message.input_type && (message.input_type !== "radio" && (message.options.length > 0 || message.input_type === "text" || message.input_type === "document" || message.input_type === "file")) && (
         <div className="pt-4 border-t border-border/50 space-y-4">
-          {/* Radio Options - Horizontal Pills */}
-          {message.input_type === "radio" && message.options.length > 0 && (
-            <div className="flex flex-wrap gap-2 justify-start">
-              {message.options.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => handleRadioSelect(option)}
-                  disabled={isLoading}
-                  className="px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-primary/10 text-foreground hover:text-primary text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Checkbox Options */}
           {message.input_type === "checkbox" && message.options.length > 0 && (
             <div className="space-y-3">
