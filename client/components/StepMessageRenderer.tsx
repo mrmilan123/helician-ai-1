@@ -6,7 +6,7 @@ import type { StepMessage } from "@/types/message";
 
 interface StepMessageRendererProps {
   message: StepMessage;
-  onSubmit: (value: string | string[] | File[], skipDocument?: boolean) => void;
+  onSubmit: (value: string | string[] | File[], skipDocument?: boolean, isSubCategory?: boolean) => void;
   isLoading?: boolean;
 }
 
@@ -25,7 +25,7 @@ export default function StepMessageRenderer({
 
   const handleRadioSelect = (value: string) => {
     setSelectedValue(value);
-    onSubmit(value);
+    onSubmit(value, false, true);
   };
 
   const handleCheckboxChange = (value: string) => {

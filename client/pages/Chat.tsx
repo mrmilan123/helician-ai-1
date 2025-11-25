@@ -145,7 +145,7 @@ export default function Chat() {
     navigate("/home");
   };
 
-  const handleStepSubmit = async (value: string | string[] | File[], skipDocument?: boolean) => {
+  const handleStepSubmit = async (value: string | string[] | File[], skipDocument?: boolean, isSubCategory?: boolean) => {
     if (!currentConversation) {
       return;
     }
@@ -218,17 +218,24 @@ export default function Chat() {
         });
       } else {
         // Handle text submission with JSON
+        const payload: any = {
+          caseId: caseId,
+          caseName: caseName || `Case #${caseId}`,
+          caseType: caseType || "",
+          content: {
+            message: Array.isArray(value) ? value.join(", ") : value,
+          },
+          type: "text",
+        };
+
+        // Add isSubCategory flag if this is a radio selection
+        if (isSubCategory) {
+          payload.isSubCategory = true;
+        }
+
         response = await fetchWithAuth("/webhook/ai-resp", {
           method: "POST",
-          body: JSON.stringify({
-            caseId: caseId,
-            caseName: caseName || `Case #${caseId}`,
-            caseType: caseType || "",
-            content: {
-              message: Array.isArray(value) ? value.join(", ") : value,
-            },
-            type: "text",
-          }),
+          body: JSON.stringify(payload),
         });
       }
 
